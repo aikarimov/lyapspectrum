@@ -2,11 +2,12 @@
 
 `lyapspectrum` Calculate the Lyapunov spectrum for a particular system
 
-`[L, LSPAN, LEXP]  = lyapspectrum(ODEFUN,TSPAN,Y0)`
-    
-`[L, LSPAN, LEXP]  = lyapspectrum(ODEFUN,TSPAN,Y0,'NAME',VALUE)`
+```
+[L, LSPAN, LEXP]  = lyapspectrum(ODEFUN,TSPAN,Y0)
+[L, LSPAN, LEXP]  = lyapspectrum(ODEFUN,TSPAN,Y0,'NAME',VALUE)
+```
 
-Input:
+### Input:
 `ODEFUN` is a function handle `ODEFUN(T,Y)`
 
 `TSPAN = [T0 T1 ... TFINAL]` is a vector of times
@@ -17,7 +18,7 @@ Input:
 
 `'jacobian',JFCN` is a Jacobian matrix ODEFUN(T,Y)
 
-Example: `L  = lyapspectrum(ODEFUN,TSPAN,Y0,'jacobian',JFCN)`
+> Example: `L  = lyapspectrum(ODEFUN,TSPAN,Y0,'jacobian',JFCN)`
 
 `'disp','none'` - sets disply style, 'none' shows no plot (default),
 
@@ -27,13 +28,13 @@ Example: `L  = lyapspectrum(ODEFUN,TSPAN,Y0,'jacobian',JFCN)`
 
 `'disp','all'` - shows all plots
 
-Example: `L  = lyapspectrum(ODEFUN,TSPAN,Y0,'disp','3d')`
+> Example: `L  = lyapspectrum(ODEFUN,TSPAN,Y0,'disp','3d')`
 
 `'df',N` - divides each step by N to calculate the local Lyapunov exponents (default N = 30) 
 
-Example: `L  = lyapspectrum(ODEFUN,TSPAN,Y0,'df',10)`
+> Example: `L  = lyapspectrum(ODEFUN,TSPAN,Y0,'df',10)`
 
-Output:
+### Output:
 `L` - vector of averaged Lyapunov exponents (base e),
 
 `LSPAN` - matrix of local Lyapunov exponents evolution over times `TSPAN`
