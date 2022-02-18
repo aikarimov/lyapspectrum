@@ -42,3 +42,16 @@
 `LEXP` - matrix of global Lyapunov exponents evolution over times `TSPAN`
  
 Copyright (C) 2022, Karimov A.I.
+
+## Illustrative example
+
+```
+[L,~,Lexp] = lyapspectrum(@lorenz2,tspan,y0,'disp','all','jacobian',@Jlorenz2,'df',10);
+```
+
+shows two pictures.
+
+![This is an image 1](https://github.com/aikarimov/lyapspectrum/blob/main/Lorenz_all_lyap.jpg)
+
+![This is an image 2](https://github.com/aikarimov/lyapspectrum/blob/main/Lorenz_all_series.jpg)
+
