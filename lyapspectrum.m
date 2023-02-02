@@ -262,7 +262,20 @@ if fdisp3d
         end
         colormap(ax,cmap); %apply colormap
         caxis(ax,[lmin(k) lmax(k)]); %set limits
-        colorbar(ax,'Ticks',linspace(lmin(k),lmax(k),5),'TickLabelInterpreter','latex'); %show colorbar with 5 marks
+        lticks = linspace(lmin(k),lmax(k),5); % set ticks: 5 marks
+        %set one 0, if there is a value nearby
+        flag0 = 0;
+        for lt = 1:5
+            if ~flag0 && abs(lticks(lt)) < 0.3
+                lticks(lt) = 0;
+                flag0 = 1;
+            end
+        end
+        if ~flag0
+            lticks = [lticks, 0]; %add 0
+        end
+        lticks = sort(lticks); %sort, now 5 marks, including 0
+        colorbar(ax,'Ticks',lticks,'TickLabelInterpreter','latex'); %show colorbar 
         view(viewvect);
         xlabel('$x_{1}$','interpreter','latex'),ylabel('$x_{2}$','interpreter','latex');
         if dim >= 3
