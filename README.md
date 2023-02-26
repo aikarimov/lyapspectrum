@@ -14,7 +14,7 @@
 
 `Y0` is a vector of initial conditions
 
-`'NAME',VALUE` given an additional input options:
+`'NAME',VALUE` gives an additional input options:
 
 `'jacobian',JFCN` is a Jacobian matrix ODEFUN(T,Y)
 
