@@ -26,7 +26,7 @@ function [L, Lspan, Lexp] = lyapspectrum(varargin)
 %   LSPAN - matrix of local Lyapunov exponents evolution over times TSPAN
 %   LEXP - matrix of global Lyapunov exponents evolution over times TSPAN
 %-----------------------------------------------------------------------------
-% Copyright (C) 2022, Karimov A.I.
+% Copyright (C) 2023, Karimov A.I.
 
 
 fsys = varargin{1,1}; %ODE system derivative function
@@ -129,7 +129,7 @@ hw = waitbar(0,'Calculating Lyapunov Spectrum');
 %first, iterate some time before it falls on the attractor
 if Ttrans > 0
     h = t(2) - t(1);
-    [~,x] = ode45(fsys,0:h:Ttrans,x0); x = x'; %fiducial trajectory
+    [~,x] = ode78(fsys,0:h:Ttrans,x0); x = x'; %fiducial trajectory
     x0 = x(end,:);
     x0 = transpose(x0);
 end
@@ -137,7 +137,6 @@ end
 %main cycle
 h = t(2) - t(1); %suppose, stepsize is uniform
 [~,xfid] = ode78(fsys,0:h/DF:t(end),x0); %fiducial trajectory
-%[~,xfid] = DOPRI78s(fsys,0:h/DF:t(end),x0); xfid = xfid';%fiducial trajectory
 
 for i = 2:N
     waitbar(i/N,hw);
@@ -154,7 +153,6 @@ for i = 2:N
     %for each component in dim
     for k = 1:dim
         [~,dx] = ode78(@(t,d)fsyslin(t,d,x0),t(i - 1):h/DF:t(i),del1(:,k)); %solve linearized system
-        %[~,dx] = DOPRI78s(@(t,d)fsyslin(t,d,x0),t(i - 1):h/DF:t(i),del1(:,k)); dx = dx';%solve linearized system
         del1(:,k) = transpose(dx(end,:));
     end
     
