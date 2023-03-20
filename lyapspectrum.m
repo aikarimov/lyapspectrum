@@ -26,7 +26,7 @@ function [L, Lspan, Lexp] = lyapspectrum(varargin)
 %   LSPAN - matrix of local Lyapunov exponents evolution over times TSPAN
 %   LEXP - matrix of global Lyapunov exponents evolution over times TSPAN
 %-----------------------------------------------------------------------------
-% Copyright (C) 2023, Karimov A.I.
+% Copyright (C) 2022, Karimov A.I.
 
 
 fsys = varargin{1,1}; %ODE system derivative function
@@ -129,14 +129,14 @@ hw = waitbar(0,'Calculating Lyapunov Spectrum');
 %first, iterate some time before it falls on the attractor
 if Ttrans > 0
     h = t(2) - t(1);
-    [~,x] = ode78(fsys,0:h:Ttrans,x0); x = x'; %fiducial trajectory
+    [~,x] = ode45(fsys,0:h:Ttrans,x0); %fiducial trajectory
     x0 = x(end,:);
     x0 = transpose(x0);
 end
 
 %main cycle
 h = t(2) - t(1); %suppose, stepsize is uniform
-[~,xfid] = ode78(fsys,0:h/DF:t(end),x0); %fiducial trajectory
+[~,xfid] = ode78(fsys,Ttrans:h/DF:t(end),x0); %fiducial trajectory
 
 for i = 2:N
     waitbar(i/N,hw);
@@ -259,19 +259,25 @@ if fdisp3d
             cmap(ctr,:) = assigncolor(col1,col2,col3,lmin(k),lmax(k),ldel(k),lvals(ctr));
         end
         colormap(ax,cmap); %apply colormap
-        caxis(ax,[lmin(k) lmax(k)]); %set limits
-        lticks = linspace(lmin(k),lmax(k),5); % set ticks: 5 marks
-        %set one 0, if there is a value nearby
-        flag0 = 0;
-        for lt = 1:5
-            if ~flag0 && abs(lticks(lt)) < 0.3
-                lticks(lt) = 0;
-                flag0 = 1;
+        if lmin(k) ~= lmax(k)
+            caxis(ax,[lmin(k) lmax(k)]); %set limits
+            lticks = linspace(lmin(k),lmax(k),5); % set ticks: 5 marks
+            %set one 0, if there is a value nearby
+            flag0 = 0;
+            for lt = 1:5
+                if ~flag0 && abs(lticks(lt)) < 0.3
+                    lticks(lt) = 0;
+                    flag0 = 1;
+                end
             end
+            if ~flag0
+                lticks = [lticks, 0]; %add 0
+            end
+        else
+            caxis(ax,[lmin(k) lmax(k)+ 1e-6]); %set limits
+            lticks = [lmin(k), lmin(k) + 1e-6];
         end
-        if ~flag0
-            lticks = [lticks, 0]; %add 0
-        end
+        
         lticks = sort(lticks); %sort, now 5 marks, including 0
         colorbar(ax,'Ticks',lticks,'TickLabelInterpreter','latex'); %show colorbar 
         view(viewvect);
@@ -323,12 +329,21 @@ else
     ldiv = lmin + ldel2;
 end
 if lk > ldiv
-    colfactor1 = (lk - ldiv)/(lmax - ldiv);
+    if (lmax ~= ldiv)
+        colfactor1 = (lk - ldiv)/(lmax - ldiv); 
+    else
+        colfactor1 = 1;
+    end
     colfactor2 = 1 - colfactor1;
+    
     %assign color
     col = col1*colfactor1 + colmid*colfactor2;
 else
-    colfactor1 = (lk - lmin)/ldel2;
+    if ldel2 ~= 0
+        colfactor1 = (lk - lmin)/ldel2;
+    else
+        colfactor1 = 1;
+    end
     colfactor2 = 1 - colfactor1;
     %assign color
     col = colmid*colfactor1 + col2*colfactor2;
