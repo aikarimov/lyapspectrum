@@ -34,6 +34,10 @@
 
 > Example: `L  = lyapspectrum(ODEFUN,TSPAN,Y0,'df',10)`
 
+`'trans',TTRANS` - skips TTRANS time before calculating the spectrum
+
+> Example: `L  = lyapspectrum(ODEFUN,TSPAN,Y0,'trans',30)`
+
 ### Output:
 `L` - vector of averaged Lyapunov exponents (base e),
 
@@ -41,12 +45,12 @@
 
 `LEXP` - matrix of global Lyapunov exponents evolution over times `TSPAN`
  
-Copyright (C) 2022, Karimov A.I.
+Copyright (C) 2023, Karimov A.I.
 
 ## Illustrative example
 
 ```
-[L,~,Lexp] = lyapspectrum(@lorenz2,tspan,y0,'disp','all','jacobian',@Jlorenz2,'df',10);
+[L,~,Lexp] = lyapspectrum(@lorenz2,tspan,y0,'disp','all','view',[0 1 0],'jacobian',@Jlorenz2,'df',10,'trans',10);
 ```
 
 shows two pictures.
