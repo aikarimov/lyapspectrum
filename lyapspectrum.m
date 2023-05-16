@@ -17,7 +17,7 @@ function [L, Lspan, Lexp] = lyapspectrum(varargin)
 %   Example: L  = LYAPSPECTRUM(ODEFUN,TSPAN,Y0,'disp','3d')
 %   'view',VECT sets 3d display with the view defined by VECT ([0 0 1] by
 %   default)
-%   'transient',TTRANS skips TTRANS time before calculating the spectrum
+%   'trans',TTRANS skips TTRANS time before calculating the spectrum
 %   'df',N - divides each step by N to calculate the local Lyapunov
 %   exponents (default N = 30) 
 %   Example: L  = LYAPSPECTRUM(ODEFUN,TSPAN,Y0,'df',10)
@@ -26,7 +26,7 @@ function [L, Lspan, Lexp] = lyapspectrum(varargin)
 %   LSPAN - matrix of local Lyapunov exponents evolution over times TSPAN
 %   LEXP - matrix of global Lyapunov exponents evolution over times TSPAN
 %-----------------------------------------------------------------------------
-% Copyright (C) 2022, Karimov A.I.
+% Copyright (C) 2023, Karimov A.I.
 
 
 fsys = varargin{1,1}; %ODE system derivative function
@@ -126,23 +126,16 @@ xplot = cell(1,N);
 
 hw = waitbar(0,'Calculating Lyapunov Spectrum');
 
-%first, iterate some time before it falls on the attractor
-if Ttrans > 0
-    h = t(2) - t(1);
-    [~,x] = ode45(fsys,0:h:Ttrans,x0); %fiducial trajectory
-    x0 = x(end,:);
-    x0 = transpose(x0);
-end
+y(:,1) = x0;
 
 %main cycle
 h = t(2) - t(1); %suppose, stepsize is uniform
-[~,xfid] = ode78(fsys,Ttrans:h/DF:t(end),x0); %fiducial trajectory
+[~,xfid] = ode78(fsys,0:h/DF:t(end) + Ttrans,x0); %fiducial trajectory
 
 for i = 2:N
     waitbar(i/N,hw);
     
     %h = t(i) - t(i - 1);
-    %[~,x] = ode45(fsys,t(i - 1):h/DF:t(i),x0); %fiducial trajectory
     ilbnd = (i-2)*DF + 1;
     iubnd = (i-1)*DF + 1;
     x = xfid(ilbnd:iubnd,:);
@@ -180,116 +173,56 @@ end
 
 close(hw);
 
+
+%cut off transient
+Nt = max([ceil(Ttrans/h),1]);
+y = y(:,Nt:end);
+lyapexp = lyapexp(:,Nt:end);
+localexp = localexp(:,Nt:end);
+t = t(Nt:end) - t(Nt);
+
 if fdisp2d
+    figure(figctr); hold on
+    plot(t,y); %draw plot
+    xlabel('t'),ylabel('Y');
 
-figure(figctr); hold on
-plot(t,y); %draw plot
-xlabel('t'),ylabel('Y');
-
-figure(figctr + 1);
-plot(t,lyapexp,t,localexp); %draw plot
-xlabel('t'),ylabel('Laypunov exponent');
-strleg = cell(1,2*dim);
-for k = 1:dim
-    strleg{1,k} = ['$\lambda_',num2str(k),' \to $ ',num2str(lyapexp(k,end))];
-end
-for k = 1:dim
-    strleg{1,dim + k} = ['$\lambda_',num2str(k),'$ local'];
-end
-legend(strleg,'interpreter','latex');
-set(gcf,'position',[100    150    1150    350]);
-end
-
-% see 3d figures
-if fdisp3d
-
-    col1 = [1 0 0]; %red color
-    col2 = [0 0 1]; %blue color
-    col3 = [0 1 0]; %green color
-    %determine colors
-    lmin = zeros(dim,1);
-    lmax = zeros(dim,1);
-    ldel = zeros(dim,1);
-    for k = 1:dim %for each dimension, set own limits
-        lmin(k) = quantile(localexp(k,:),0.15); %below lmin, all is blue
-        lmax(k) = quantile(localexp(k,:),0.85); %under lmax, all is red
-        ldel(k) = lmax(k) - lmin(k); %interval
-    end
-    
-    % initialize figures
-    figure(figctr + 2);
-    
+    figure(figctr + 1);
+    plot(t,lyapexp,t,localexp); %draw plot
+    xlabel('t'),ylabel('Laypunov exponent');
+    strleg = cell(1,2*dim);
     for k = 1:dim
-        ax = subplot(1,dim,k); %plot it
-        
-        Xmat = nan(N,DF+1);
-        Ymat = nan(N,DF+1);
-        Zmat = nan(N,DF+1);
+        strleg{1,k} = ['$\lambda_',num2str(k),' \to $ ',num2str(lyapexp(k,end))];
+    end
+    for k = 1:dim
+        strleg{1,dim + k} = ['$\lambda_',num2str(k),'$ local'];
+    end
+    legend(strleg,'interpreter','latex');
+    set(gcf,'position',[100    150    1150    350]);
+end
 
-        colMat = zeros(N,3);
-        
-        M = 10;
+%3d figures - new version
 
-        for i = M:N %do not draw the first M segments of line (inappropriate LLE)
-            lk = min([lmax(k),max([localexp(k,i),lmin(k)])]); %local k-th value     
-            x =  xplot{1,i};% extract i-th segment of attractor
-
-            Xmat(i,:) = x(1,:);
-            Ymat(i,:) = x(2,:);
-
-            if dim > 2 %if dimensions are more than 2, we set variable Z
-                Zmat(i,:) = x(3,:); 
-            end
-
-            colMat(i,:) = assigncolor(col1,col2,col3,lmin(k),lmax(k),ldel(k),lk);
-
+if fdisp3d
+    if dim < 3
+        disp('Dimension is less then 3');
+    else
+        FontSIZE = 10;
+        figure(figctr + 2);
+        for k = 1:dim
+            subplottight(1,dim,k);
+            colormap(turbo)
+            surf([y(1,:); y(1,:)], [y(2,:); y(2,:)], [y(3,:); y(3,:)],[localexp(k,:);localexp(k,:)],'EdgeColor','flat', 'FaceColor','none')
+            set(gca,'FontSize',FontSIZE-1);
+            title(['$\lambda_',num2str(k),'$'],'interpreter','latex');
+            set(gca, 'XDir', 'reverse'); hold on;
+            zlabel('$z$','interpreter','latex','FontSize',FontSIZE);
+            ylabel('$y$','interpreter','latex','FontSize',FontSIZE);
+            xlabel('$x$','interpreter','latex','FontSize',FontSIZE);
+            set(gca,'TickLabelInterpreter','latex');
+            c = colorbar;
+            set(c,'TickLabelInterpreter','latex');
+            view(viewvect);
         end
-        if dim > 2
-            plot3(ax,Xmat',Ymat',Zmat','LineWidth',2); %draw plot
-        else
-            plot(ax,Xmat',Ymat','LineWidth',2); %draw plot
-        end
-        colororder(ax,colMat);
-
-        %now show colorbar
-        nvals = 50; %values of color
-        cmap = zeros(nvals,3);
-        lvals = linspace(lmin(k),lmax(k),nvals);
-        for ctr = 1:nvals
-            cmap(ctr,:) = assigncolor(col1,col2,col3,lmin(k),lmax(k),ldel(k),lvals(ctr));
-        end
-        colormap(ax,cmap); %apply colormap
-        if lmin(k) ~= lmax(k)
-            caxis(ax,[lmin(k) lmax(k)]); %set limits
-            lticks = linspace(lmin(k),lmax(k),5); % set ticks: 5 marks
-            %set one 0, if there is a value nearby
-            flag0 = 0;
-            for lt = 1:5
-                if ~flag0 && abs(lticks(lt)) < 0.3
-                    lticks(lt) = 0;
-                    flag0 = 1;
-                end
-            end
-            if ~flag0
-                lticks = [lticks, 0]; %add 0
-            end
-        else
-            caxis(ax,[lmin(k) lmax(k)+ 1e-6]); %set limits
-            lticks = [lmin(k), lmin(k) + 1e-6];
-        end
-        
-        lticks = sort(lticks); %sort, now 5 marks, including 0
-        colorbar(ax,'Ticks',lticks,'TickLabelInterpreter','latex'); %show colorbar 
-        view(viewvect);
-        xlabel('$x_{1}$','interpreter','latex'),ylabel('$x_{2}$','interpreter','latex');
-        if dim >= 3
-            zlabel('$x_{3}$','interpreter','latex');
-        end
-        set(ax,'TickLabelInterpreter','latex');
-        title(['$\lambda_',num2str(k),'$'],'interpreter','latex');
-        set(gcf,'position',[100    100    1350    350]);
-
-        drawnow;
     end
 end
 
@@ -313,48 +246,10 @@ end
 
 end
 
-function col = assigncolor(col1,col2,colmid,lmin,lmax,ldel,lk)
-%col1 for max
-%col2 for min
-%colmid for middle value
-%lmin min value
-%lmax max value
-%ldel interval
-
-if lmin*lmax < 0 %if signs are different
-    ldel2 = -lmin; %set middle color to zero values
-    ldiv = 0;
-else
-    ldel2 = ldel/2; %set middle color to exact middle
-    ldiv = lmin + ldel2;
-end
-if lk > ldiv
-    if (lmax ~= ldiv)
-        colfactor1 = (lk - ldiv)/(lmax - ldiv); 
-    else
-        colfactor1 = 1;
+function h = subplottight(n,m,i)
+    [c,r] = ind2sub([m n], i);
+    ax = subplot('Position', [(c-0.82)/m, 1-(r-0.2)/n, (0.75)/m, (0.7)/n]);
+    if(nargout > 0)
+      h = ax;
     end
-    colfactor2 = 1 - colfactor1;
-    
-    %assign color
-    col = col1*colfactor1 + colmid*colfactor2;
-else
-    if ldel2 ~= 0
-        colfactor1 = (lk - lmin)/ldel2;
-    else
-        colfactor1 = 1;
-    end
-    colfactor2 = 1 - colfactor1;
-    %assign color
-    col = colmid*colfactor1 + col2*colfactor2;
-end
-%set limits
-for i = 1:3
-    if col(i) < 0 
-        col(i) = 0;
-    end
-    if col(i) > 1
-        col(i) = 1;
-    end
-end
 end
