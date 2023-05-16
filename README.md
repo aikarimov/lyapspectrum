@@ -50,7 +50,7 @@ Copyright (C) 2023, Karimov A.I.
 ## Illustrative example
 
 ```
-[L,~,Lexp] = lyapspectrum(@lorenz2,tspan,y0,'disp','all','view',[0 1 0],'jacobian',@Jlorenz2,'df',10,'trans',10);
+[L,~,Lexp] = lyapspectrum(@lorenz2,tspan,y0,'disp','all','view',[0 1 0],'jacobian',@Jlorenz2,'trans',10);
 ```
 
 shows two pictures.
