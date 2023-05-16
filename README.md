@@ -56,6 +56,6 @@ Copyright (C) 2023, Karimov A.I.
 shows two pictures.
 
 ![This is an image 1](https://github.com/aikarimov/lyapspectrum/blob/main/Lorenz_all_lyap.jpg)
-
+                      
 ![This is an image 2](https://github.com/aikarimov/lyapspectrum/blob/main/Lorenz_all_series.jpg)
 
