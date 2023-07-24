@@ -19,7 +19,7 @@ function [L, Lspan, Lexp] = lyapspectrum(varargin)
 %   default)
 %   'trans',TTRANS skips TTRANS time before calculating the spectrum
 %   'df',N - divides each step by N to calculate the local Lyapunov
-%   exponents (default N = 30) 
+%   exponents (default N = 10) 
 %   Example: L  = LYAPSPECTRUM(ODEFUN,TSPAN,Y0,'df',10)
 %   Output:
 %   L - vector of averaged Lyapunov exponents (base e),
@@ -33,22 +33,23 @@ fsys = varargin{1,1}; %ODE system derivative function
 t = varargin{1,2}; %set time array
 y0 = varargin{1,3};
 
-DF = 30; %division factor
+DF = 10; %division factor
 fdisp2d = 0; %display 2d
 fdisp3d = 0; %display 3d
 
-viewvect = [0 0 1];
+viewvect = [180, -90];
 Ttrans = 0;
 
 deltaX = 1e-8; %delta for Jacobian
+Jfun = @(t,x)Jnum(fsys, t, x, deltaX);
 
-fsyslin = @(t,D,x)(Jnum(fsys, t, x, deltaX)*D); %if we have no analytical Jacobian
+%fsyslin = @(t,D,x)(Jnum(fsys, t, x, deltaX)*D); %if we have no analytical Jacobian
 
 for j = 4:2:nargin %in nargin > 3
     if strcmp(varargin{1,j},'jacobian')
         if nargin >= j + 1
             Jfun = varargin{1,j + 1};
-            fsyslin = @(t,D,x)(Jfun(t,x)*D);
+            %fsyslin = @(t,D,x)(Jfun(t,x)*D);
         else
             error('No agrument matching the property jacobian');
         end
@@ -143,9 +144,13 @@ for i = 2:N
     x1 = x(:,end); %last point
     
     xplot{1,i} = x;
+    
+    J = Jfun(t(i-1),x0);
+    fsyslin = @(t,D)(J*D);
+
     %for each component in dim
     for k = 1:dim
-        [~,dx] = ode78(@(t,d)fsyslin(t,d,x0),t(i - 1):h/DF:t(i),del1(:,k)); %solve linearized system
+        [~,dx] = ode78(fsyslin,t(i - 1):h/DF:t(i),del1(:,k)); %solve linearized system
         del1(:,k) = transpose(dx(end,:));
     end
     
@@ -161,8 +166,8 @@ for i = 2:N
         localexp(k,i) = 1/h*log(Nk); %local Lyapunov exponent
         v(:,k) = vk/Nk; %normalize k-th component
         
-        Lsum(k) = Lsum(k) + localexp(k,i); %sum
-        lyapexp(k,i) = Lsum(k)/i; %averaging
+        %Lsum(k) = Lsum(k) + localexp(k,i); %sum
+        %lyapexp(k,i) = Lsum(k)/i; %averaging
     end
     
     del1 = v;
@@ -180,6 +185,14 @@ y = y(:,Nt:end);
 lyapexp = lyapexp(:,Nt:end);
 localexp = localexp(:,Nt:end);
 t = t(Nt:end) - t(Nt);
+
+%calculate Lyapunov exponents with no transient
+for i = 1:length(t)
+    for k = 1:dim
+        Lsum(k) = Lsum(k) + localexp(k,i); %sum
+        lyapexp(k,i) = Lsum(k)/i; %averaging
+    end
+end
 
 if fdisp2d
     figure(figctr); hold on
