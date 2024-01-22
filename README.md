@@ -45,7 +45,7 @@
 
 `LEXP` - matrix of global Lyapunov exponents evolution over times `TSPAN`
  
-Copyright (C) 2023, Karimov A.I.
+Copyright (C) 2024, Karimov A.I.
 
 ## Illustrative example
 
